@@ -22,9 +22,12 @@ app.use(express.static(path.join(__dirname, "public")));
 // In-memory store for valid keys
 const validKeys = new Set();
 
-// Checkpoint configuration (add more if needed)
+// Checkpoint configuration with the updated Linkvertise URL for checkpoint 1
 const checkpoints = [
-  { url: "https://linkvertise.com/your-link-1", next: "/generate" }
+  { 
+    url: "https://linkvertise.com/1223791/checkpoint-1-chronicle?o=sharing", 
+    next: "/generate" 
+  }
 ];
 
 /*  
@@ -42,7 +45,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Checkpoint route: sets a session flag and sends the user to the external URL.
+// Checkpoint route: sets a session flag and sends the user to the external Linkvertise URL.
 app.get("/CHECKPOINT_1", (req, res) => {
   req.session.checkpoint_1 = true;
   res.redirect(checkpoints[0].url);
@@ -53,7 +56,7 @@ app.get("/REDIRECT_1", (req, res) => {
   if (!req.session.checkpoint_1) {
     return res.redirect("/");
   }
-  res.redirect("/generate");
+  res.redirect(checkpoints[0].next);
 });
 
 // Key-generation page route (serves the same index.html file)
