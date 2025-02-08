@@ -57,3 +57,16 @@ async function completeCheckpoint(checkpointNumber) {
     }
   }
 }
+async function validateKey() {
+  const key = document.getElementById('keyInput').value;
+  const response = await fetch('/validate-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, ip: userIP })
+  });
+
+  const data = await response.json();
+  const msgDiv = document.getElementById('message');
+  msgDiv.textContent = data.message;
+  msgDiv.style.color = data.valid ? 'green' : 'red';
+}
