@@ -1,69 +1,41 @@
-let currentKey = '';
-let currentCheckpoint = 0;
+let userKey = '';
+let userIP = '';
 
+// Get user IP (simplified for demo)
+fetch('https://api.ipify.org?format=json')
+  .then(response => response.json())
+  .then(data => {
+    userIP = data.ip;
+  });
+
+// Generate Key
+document.getElementById('generateKeyBtn').addEventListener('click', async () => {
+  const response = await fetch('/generate-key');
+  const data = await response.json();
+  userKey = data.key;
+  document.getElementById('generatedKey').textContent = `Generated Key: ${userKey}`;
+});
+
+// Validate Key
 document.getElementById('validateBtn').addEventListener('click', async () => {
   const key = document.getElementById('keyInput').value;
-  currentKey = key;
+  if (!key) {
+    showMessage('Please enter a key!', 'red');
+    return;
+  }
 
-  const response = await fetch(`http://localhost:3000/validate-key?key=${key}`);
+  const response = await fetch(`/key-check?key=${key}`);
   const data = await response.json();
 
-  if (!data.valid) {
+  if (data.result === 'key is not valid') {
     showMessage('Invalid key!', 'red');
     return;
   }
 
-  if (data.completed) {
-    showMessage('Key already redeemed!', 'red');
-    return;
-  }
-
-  startCheckpointFlow(data.checkpoints);
+  // Show checkpoints link
+  document.getElementById('checkpointsLink').style.display = 'block';
+  showMessage('Complete checkpoints to validate your key!', 'blue');
 });
-
-async function startCheckpointFlow(checkpoints) {
-  const checkpointContainer = document.getElementById('checkpointContainer');
-  checkpointContainer.innerHTML = '';
-
-  for (let i = currentCheckpoint; i < 3; i++) {
-    const checkpoint = document.createElement('div');
-    checkpoint.className = 'checkpoint';
-    checkpoint.innerHTML = `
-      <p>Checkpoint ${i + 1}:</p>
-      <a href="${checkpoints[i]}" target="_blank">Complete this offer</a>
-      <button onclick="markCheckpointComplete(${i})">I've completed this</button>
-    `;
-    checkpointContainer.appendChild(checkpoint);
-    await waitForCheckpointCompletion(i);
-  }
-
-  showMessage('All checkpoints completed! Key activated!', 'green');
-}
-
-async function markCheckpointComplete(index) {
-  const response = await fetch('http://localhost:3000/complete-checkpoint', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: currentKey, checkpointIndex: index })
-  });
-
-  if (response.ok) {
-    currentCheckpoint++;
-  }
-}
-
-function waitForCheckpointCompletion(index) {
-  return new Promise(resolve => {
-    const checkInterval = setInterval(async () => {
-      const response = await fetch(`http://localhost:3000/validate-key?key=${currentKey}`);
-      const data = await response.json();
-      if (data.currentStep > index) {
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 1000);
-  });
-}
 
 function showMessage(msg, color) {
   const msgDiv = document.getElementById('message');
