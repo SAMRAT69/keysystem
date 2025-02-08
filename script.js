@@ -42,3 +42,18 @@ function showMessage(msg, color) {
   msgDiv.textContent = msg;
   msgDiv.style.color = color;
 }
+async function completeCheckpoint(checkpointNumber) {
+  const response = await fetch('/track-checkpoint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ip: userIP, checkpoint: checkpointNumber })
+  });
+
+  if (response.ok) {
+    if (checkpointNumber === 3) {
+      window.location.href = '/validate-key';
+    } else {
+      window.location.href = `/checkpoint_${checkpointNumber + 1}`;
+    }
+  }
+}
