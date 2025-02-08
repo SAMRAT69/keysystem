@@ -3,16 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Key System with Checkpoints</title>
+  <title>Key System</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>Key Activation System</h1>
+    <h1>Key Generator & Validator</h1>
+    <button id="generateKeyBtn">Generate Key</button>
+    <p id="generatedKey"></p>
     <input type="text" id="keyInput" placeholder="Enter your key">
     <button id="validateBtn">Validate Key</button>
-    <div id="checkpointContainer"></div>
-    <div id="message"></div>
+    <p id="message"></p>
+    <a href="/checkpoint_1" id="checkpointsLink" style="display: none;">
+      <button>Checkpoints</button>
+    </a>
   </div>
   <script src="script.js"></script>
 </body>
