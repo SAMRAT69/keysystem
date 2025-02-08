@@ -1,42 +1,60 @@
-const express = require("express");
-const bodyParser = require("body-parser");
+const express = require('express');
+const cors = require('cors');
 const app = express();
 const port = 3000;
 
-// Middleware
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
 
-// In-memory "database" of valid keys
-const validKeys = new Set();
+// Database (in-memory for now)
+const keysDB = {
+  'ABC123': { 
+    valid: true, 
+    checkpointsCompleted: 0 // Track progress
+  }
+};
 
-// Endpoint to validate keys
-app.post("/validate-key", (req, res) => {
-    const { key } = req.body;
+// Validate Key & Check Checkpoints
+app.get('/validate-key', (req, res) => {
+  const key = req.query.key;
+  
+  if (!keysDB[key]) {
+    return res.json({ valid: false, message: 'Invalid key' });
+  }
 
-    if (!key) {
-        return res.status(400).json({ valid: false, message: "No key provided." });
-    }
+  if (keysDB[key].checkpointsCompleted >= 3) {
+    return res.json({ 
+      valid: true, 
+      completed: true,
+      message: 'All checkpoints completed!' 
+    });
+  }
 
-    if (validKeys.has(key)) {
-        validKeys.delete(key); // Mark key as used
-        return res.json({ valid: true });
-    } else {
-        return res.json({ valid: false, message: "Invalid or already used key." });
-    }
+  // Return checkpoint URLs (replace with your actual URLs later)
+  res.json({
+    valid: true,
+    completed: false,
+    checkpoints: [
+      'https://linkvertise.com/checkpoint1',
+      'https://loot.link/checkpoint2',
+      'https://example.com/checkpoint3'
+    ],
+    currentStep: keysDB[key].checkpointsCompleted
+  });
 });
 
-// Endpoint to generate and store a valid key
-app.post("/generate-key", (req, res) => {
-    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let key = "";
-    for (let i = 0; i < 10; i++) {
-        key += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    validKeys.add(key); // Store the key as valid
-    res.json({ key });
+// Update Checkpoint Progress
+app.post('/complete-checkpoint', (req, res) => {
+  const { key, checkpointIndex } = req.body;
+  
+  if (!keysDB[key] || checkpointIndex > 2) {
+    return res.status(400).json({ success: false });
+  }
+
+  keysDB[key].checkpointsCompleted = checkpointIndex + 1;
+  res.json({ success: true });
 });
 
-// Start the server
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
