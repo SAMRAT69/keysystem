@@ -1,51 +1,72 @@
-// Function to generate a random key
-function generateRandomKey() {
-    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let key = "";
-    for (let i = 0; i < 10; i++) {
-        key += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return key;
+let currentKey = '';
+let currentCheckpoint = 0;
+
+document.getElementById('validateBtn').addEventListener('click', async () => {
+  const key = document.getElementById('keyInput').value;
+  currentKey = key;
+
+  const response = await fetch(`http://localhost:3000/validate-key?key=${key}`);
+  const data = await response.json();
+
+  if (!data.valid) {
+    showMessage('Invalid key!', 'red');
+    return;
+  }
+
+  if (data.completed) {
+    showMessage('Key already redeemed!', 'red');
+    return;
+  }
+
+  startCheckpointFlow(data.checkpoints);
+});
+
+async function startCheckpointFlow(checkpoints) {
+  const checkpointContainer = document.getElementById('checkpointContainer');
+  checkpointContainer.innerHTML = '';
+
+  for (let i = currentCheckpoint; i < 3; i++) {
+    const checkpoint = document.createElement('div');
+    checkpoint.className = 'checkpoint';
+    checkpoint.innerHTML = `
+      <p>Checkpoint ${i + 1}:</p>
+      <a href="${checkpoints[i]}" target="_blank">Complete this offer</a>
+      <button onclick="markCheckpointComplete(${i})">I've completed this</button>
+    `;
+    checkpointContainer.appendChild(checkpoint);
+    await waitForCheckpointCompletion(i);
+  }
+
+  showMessage('All checkpoints completed! Key activated!', 'green');
 }
 
-// Generate key button
-document.getElementById("generateKeyButton").addEventListener("click", () => {
-    const key = generateRandomKey();
-    document.getElementById("generatedKey").textContent = `Generated Key: ${key}`;
-});
+async function markCheckpointComplete(index) {
+  const response = await fetch('http://localhost:3000/complete-checkpoint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: currentKey, checkpointIndex: index })
+  });
 
-// Validate key button
-document.getElementById("validateButton").addEventListener("click", async () => {
-    const key = document.getElementById("keyInput").value;
-    const responseMessage = document.getElementById("responseMessage");
+  if (response.ok) {
+    currentCheckpoint++;
+  }
+}
 
-    if (!key) {
-        responseMessage.textContent = "Please enter a key.";
-        responseMessage.style.color = "red";
-        return;
-    }
+function waitForCheckpointCompletion(index) {
+  return new Promise(resolve => {
+    const checkInterval = setInterval(async () => {
+      const response = await fetch(`http://localhost:3000/validate-key?key=${currentKey}`);
+      const data = await response.json();
+      if (data.currentStep > index) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 1000);
+  });
+}
 
-    try {
-        const response = await fetch("/validate-key", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ key }),
-        });
-
-        const data = await response.json();
-
-        if (data.valid) {
-            responseMessage.textContent = "Key is valid!";
-            responseMessage.style.color = "green";
-        } else {
-            responseMessage.textContent = data.message || "Invalid key.";
-            responseMessage.style.color = "red";
-        }
-    } catch (error) {
-        responseMessage.textContent = "An error occurred. Please try again.";
-        responseMessage.style.color = "red";
-        console.error(error);
-    }
-});
+function showMessage(msg, color) {
+  const msgDiv = document.getElementById('message');
+  msgDiv.textContent = msg;
+  msgDiv.style.color = color;
+}
